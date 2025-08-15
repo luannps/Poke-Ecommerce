@@ -98,7 +98,6 @@ pokemon-tcg-ecommerce-complete/
 │   ├── requirements.txt
 │   └── run.py
 ├── docs/                    # Documentação
-├── screenshots/             # Capturas de tela
 └── README.md               # Este arquivo
 ```
 
