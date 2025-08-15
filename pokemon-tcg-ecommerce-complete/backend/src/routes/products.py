@@ -3,8 +3,65 @@ from src.models.user import db
 from src.models.product import Product
 import requests
 import json
+import os
+from werkzeug.utils import secure_filename
+from flask_cors import CORS
 
 products_bp = Blueprint('products', __name__)
+
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@products_bp.route('/products', methods=['POST'])
+def create_product():
+    """Cadastrar novo produto (carta avulsa ou deck pronto)"""
+    try:
+        data = request.form.to_dict() if request.form else request.json
+        # Campos obrigatórios
+        name = data.get('name')
+        description = data.get('description', '')
+        price = float(data.get('price', 0))
+        category = data.get('category')
+        set_name = data.get('set_name', '')
+        image_url = None
+
+        # Criar diretório de upload se não existir
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+        # Upload de imagem (opcional)
+        if 'image' in request.files:
+            image = request.files['image']
+            if image and allowed_file(image.filename):
+                filename = secure_filename(image.filename)
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                image.save(filepath)
+                image_url = f'/{UPLOAD_FOLDER}/{filename}'
+        else:
+            image_url = data.get('image_url')
+
+        product = Product(
+            name=name,
+            description=description,
+            price=price,
+            category=category,
+            set_name=set_name,
+            image_url=image_url,
+            original_price=float(data.get('original_price', price)),
+            subcategory=data.get('subcategory'),
+            rarity=data.get('rarity'),
+            stock=int(data.get('stock', 0)),
+            rating=float(data.get('rating', 0)),
+            is_active=True
+        )
+        db.session.add(product)
+        db.session.commit()
+        return jsonify({'message': 'Produto cadastrado com sucesso', 'product': product.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 # Mock data para produtos
 MOCK_PRODUCTS = [
@@ -216,30 +273,50 @@ def init_products_data():
 @products_bp.route('/cards/search', methods=['GET'])
 def search_pokemon_cards():
     """Buscar cartas na API do Pokémon TCG"""
+    print("Recebida requisição para buscar cartas")
     try:
         query = request.args.get('q', '')
         page = request.args.get('page', 1, type=int)
         page_size = request.args.get('pageSize', 20, type=int)
         
+        print(f"Parâmetros recebidos: query='{query}', page={page}, pageSize={page_size}")
+        
         # URL da API do Pokémon TCG
         api_url = 'https://api.pokemontcg.io/v2/cards'
+        headers = {
+            'X-Api-Key': '5fcd8d34-9223-4ae5-9503-32fe6a701cf4'
+        }
+        
+        # Se não houver query, busca cartas populares por padrão
+        if not query:
+            query = 'supertype:pokemon rarity:rare'
         
         params = {
             'q': query,
             'page': page,
-            'pageSize': page_size
+            'pageSize': page_size,
+            'orderBy': 'name'
+            # Removido select para receber todos os campos da carta
         }
         
-        # Fazer requisição para a API
-        response = requests.get(api_url, params=params)
+        print(f"Requesting Pokemon TCG API with params: {params}")
+        response = requests.get(api_url, params=params, headers=headers)
         
         if response.status_code == 200:
             data = response.json()
-            return jsonify(data)
+            # Adiciona um cache de 5 minutos
+            response_data = jsonify(data)
+            response_data.headers['Cache-Control'] = 'public, max-age=300'
+            return response_data
         else:
-            return jsonify({'error': 'Erro ao buscar cartas'}), 500
+            print(f"Error from Pokemon TCG API: {response.status_code} - {response.text}")
+            return jsonify({
+                'error': 'Erro ao buscar cartas',
+                'details': response.text
+            }), response.status_code
             
     except Exception as e:
+        print(f"Exception in search_pokemon_cards: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/cards/sets', methods=['GET'])

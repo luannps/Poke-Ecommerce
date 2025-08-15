@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Link } from 'react-router-dom'
 import { 
   Search, 
   ShoppingCart, 
@@ -17,12 +18,12 @@ export default function Header({ user, onLoginClick, onLogout }) {
   const [cartCount] = useState(3)
 
   const navItems = [
-    { label: 'Início', href: '#', color: 'bg-primary/20 text-primary border-primary/30' },
-    { label: 'Cartas Avulsas', href: '#', color: 'bg-accent/20 text-accent border-accent/30' },
-    { label: 'Decks Prontos', href: '#', color: 'bg-primary/20 text-primary border-primary/30' },
-    { label: 'Boosters', href: '#', color: 'bg-accent/20 text-accent border-accent/30' },
-    { label: 'Deck Builder', href: '#', color: 'bg-primary/20 text-primary border-primary/30' },
-    { label: 'Promoções', href: '#', color: 'bg-accent/20 text-accent border-accent/30' }
+    { label: 'Início', href: '/', color: 'bg-primary/20 text-primary border-primary/30' },
+    { label: 'Cartas Avulsas', href: '/cartas', color: 'bg-accent/20 text-accent border-accent/30' },
+    { label: 'Decks Prontos', href: '/decks', color: 'bg-primary/20 text-primary border-primary/30' },
+    { label: 'Boosters', href: '/boosters', color: 'bg-accent/20 text-accent border-accent/30' },
+    { label: 'Deck Builder', href: '/deck-builder', color: 'bg-primary/20 text-primary border-primary/30' },
+    { label: 'Promoções', href: '/promocoes', color: 'bg-accent/20 text-accent border-accent/30' }
   ]
 
   return (
@@ -102,13 +103,14 @@ export default function Header({ user, onLoginClick, onLogout }) {
         {/* Navigation - Desktop */}
         <div className="hidden md:flex items-center justify-center py-4 space-x-2">
           {navItems.map((item, index) => (
-            <Button
-              key={index}
-              variant="ghost"
-              className={`${item.color} shadow-glow-hover`}
-            >
-              {item.label}
-            </Button>
+            <Link key={index} to={item.href} className="no-underline">
+              <Button
+                variant="ghost"
+                className={`${item.color} shadow-glow-hover`}
+              >
+                {item.label}
+              </Button>
+            </Link>
           ))}
         </div>
 
@@ -129,13 +131,14 @@ export default function Header({ user, onLoginClick, onLogout }) {
             {/* Mobile Navigation */}
             <div className="px-4 space-y-2">
               {navItems.map((item, index) => (
-                <Button
-                  key={index}
-                  variant="ghost"
-                  className={`w-full justify-start ${item.color}`}
-                >
-                  {item.label}
-                </Button>
+                <Link key={index} to={item.href} className="no-underline">
+                  <Button
+                    variant="ghost"
+                    className={`w-full justify-start ${item.color}`}
+                  >
+                    {item.label}
+                  </Button>
+                </Link>
               ))}
             </div>
 
